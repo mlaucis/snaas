@@ -24,6 +24,7 @@ const (
 
 	headerForwardedProto = "X-Forwarded-Proto"
 
+	keyAppID        = "appID"
 	keyCommentID    = "commentID"
 	keyCursorAfter  = "after"
 	keyCursorBefore = "before"
@@ -159,6 +160,10 @@ type eventCondition struct {
 		Type *condition `json:"type,omitempty"`
 	} `json:"object,omitempty"`
 	Type *condition `json:"type,omitempty"`
+}
+
+func extractAppID(r *http.Request) (uint64, error) {
+	return strconv.ParseUint(mux.Vars(r)[keyAppID], 10, 64)
 }
 
 func extractEventOpts(r *http.Request) (event.QueryOptions, error) {
