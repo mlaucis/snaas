@@ -4,10 +4,10 @@ import Html exposing (..)
 import Html.Attributes exposing (class, href, id, placeholder, title, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Navigation
-
 import App
 import Container
 import Route
+
 
 main : Program Flags Model Msg
 main =
@@ -19,11 +19,14 @@ main =
         }
 
 
+
 -- MODEL
+
 
 type alias Flags =
     { zone : String
     }
+
 
 type alias Model =
     { appModel : App.Model
@@ -31,18 +34,25 @@ type alias Model =
     , zone : String
     }
 
-init : Flags -> Navigation.Location -> (Model, Cmd Msg)
-init {zone} location =
+
+init : Flags -> Navigation.Location -> ( Model, Cmd Msg )
+init { zone } location =
     let
-        (routeModel, routeCmd) = Route.init location
-        (appModel, appCmd) = App.init routeModel.current
+        ( routeModel, routeCmd ) =
+            Route.init location
+
+        ( appModel, appCmd ) =
+            App.init routeModel.current
     in
-        (Model appModel routeModel zone) !
-            [ Cmd.map RouteMsg routeCmd
-            , Cmd.map AppMsg appCmd
-            ]
+        (Model appModel routeModel zone)
+            ! [ Cmd.map RouteMsg routeCmd
+              , Cmd.map AppMsg appCmd
+              ]
+
+
 
 -- UPDATE
+
 
 type Msg
     = AppMsg App.Msg
@@ -50,52 +60,69 @@ type Msg
     | Navigate Route.Route
     | RouteMsg Route.Msg
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AppMsg appMsg ->
             let
-                (appModel, appCmd) = App.update appMsg model.appModel
+                ( appModel, appCmd ) =
+                    App.update appMsg model.appModel
             in
-                ({ model | appModel = appModel }, Cmd.map AppMsg appCmd)
+                ( { model | appModel = appModel }, Cmd.map AppMsg appCmd )
+
         LocationChange location ->
             init (Flags model.zone) location
+
         Navigate route ->
-            (model, Cmd.map RouteMsg (Route.navigate route))
+            ( model, Cmd.map RouteMsg (Route.navigate route) )
+
         RouteMsg routeMsg ->
             let
-                (routeModel, routeCmd) = Route.update routeMsg model.route
+                ( routeModel, routeCmd ) =
+                    Route.update routeMsg model.route
             in
-                ({ model | route = routeModel }, Cmd.map RouteMsg routeCmd)
+                ( { model | route = routeModel }, Cmd.map RouteMsg routeCmd )
+
 
 
 -- SUBSCRIPTION
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
 
+
+
 -- VIEW
+
 
 view : Model -> Html Msg
 view model =
     let
-        page = case model.route.current of
-            Nothing ->
-                [ viewNotFound ]
-            Just (Route.App _) ->
-                [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
-                ]
-            Just Route.Apps ->
-                [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
-                ]
-            Just Route.Dashboard ->
-                [ viewDashboard model.zone ]
-            Just Route.Members ->
-                [ viewNotFound ]
+        page =
+            case model.route.current of
+                Nothing ->
+                    [ viewNotFound ]
+
+                Just (Route.App _) ->
+                    [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
+                    ]
+
+                Just (Route.Apps) ->
+                    [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
+                    ]
+
+                Just (Route.Dashboard) ->
+                    [ viewDashboard model.zone ]
+
+                Just (Route.Members) ->
+                    [ viewNotFound ]
     in
         div [ class "content" ]
             ([ viewHeader model ] ++ page ++ [ viewFooter model ])
+
 
 viewDashboard : String -> Html Msg
 viewDashboard zone =
@@ -116,15 +143,18 @@ viewDashboard zone =
             ]
         ]
 
+
 viewDebug : Model -> Html Msg
 viewDebug model =
     div [ class "debug" ]
-      [ text (toString model)
-      ]
+        [ text (toString model)
+        ]
+
 
 viewFooter : Model -> Html Msg
-viewFooter model=
+viewFooter model =
     Container.view (footer []) [ viewDebug model ]
+
 
 viewHeader : Model -> Html Msg
 viewHeader model =
@@ -137,6 +167,7 @@ viewHeader model =
             ]
         , nav [] [ span [] [ text model.zone ] ]
         ]
+
 
 viewNotFound : Html Msg
 viewNotFound =

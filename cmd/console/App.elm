@@ -11,7 +11,9 @@ import Navigation
 import Container
 import Route
 
+
 -- MODEL
+
 
 type alias App =
     { backend_token : String
@@ -22,37 +24,47 @@ type alias App =
     , token : String
     }
 
+
 type alias Context =
     { model : Model
     , route : Maybe Route.Route
     }
 
+
 type alias Model =
     { apps : List App
     , description : String
     , name : String
-    , selected : (Maybe App)
+    , selected : Maybe App
     }
 
-init : Maybe Route.Route -> (Model, Cmd Msg)
+
+init : Maybe Route.Route -> ( Model, Cmd Msg )
 init route =
     case route of
         Just (Route.App id) ->
-            (initModel, getApp id)
-        Just Route.Apps ->
-            (initModel, getApps)
+            ( initModel, getApp id )
+
+        Just (Route.Apps) ->
+            ( initModel, getApps )
+
         _ ->
-            (initModel, Cmd.none)
+            ( initModel, Cmd.none )
+
 
 initApp : App
 initApp =
     App "" "" False "" "" ""
 
+
 initModel : Model
 initModel =
     Model [] "" "" Nothing
 
+
+
 -- UPDATE
+
 
 type Msg
     = FetchApp (Result Http.Error App)
@@ -64,37 +76,50 @@ type Msg
     | Select String
     | Submit
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FetchApp (Ok app) ->
-            ({ model | selected = (Just app) }, Cmd.none)
+            ( { model | selected = (Just app) }, Cmd.none )
+
         FetchApp (Err _) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
+
         FetchApps (Ok apps) ->
-            ({ model | apps = apps, selected = Nothing }, Cmd.none)
+            ( { model | apps = apps, selected = Nothing }, Cmd.none )
+
         FetchApps (Err _) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
+
         Description description ->
-            ({ model | description = description }, Cmd.none)
+            ( { model | description = description }, Cmd.none )
+
         List ->
-            ({ model | selected = Nothing }, Navigation.newUrl (Route.construct Route.Apps))
+            ( { model | selected = Nothing }, Navigation.newUrl (Route.construct Route.Apps) )
+
         Name name ->
-            ({ model | name = name }, Cmd.none)
+            ( { model | name = name }, Cmd.none )
+
         New (Ok app) ->
-            ({ model | apps = model.apps ++ [ app ], description = "", name = "" }, Cmd.none)
+            ( { model | apps = model.apps ++ [ app ], description = "", name = "" }, Cmd.none )
+
         New (Err _) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
+
         Select id ->
-            ({ model | selected = (selectApp id model.apps) }, Navigation.newUrl (Route.construct (Route.App id)))
+            ( { model | selected = (selectApp id model.apps) }, Navigation.newUrl (Route.construct (Route.App id)) )
+
         Submit ->
-            (model, create model.name model.description)
+            ( model, create model.name model.description )
+
 
 
 -- VIEW
 
+
 view : Context -> Html Msg
-view {model, route} =
+view { model, route } =
     let
         view =
             case route of
@@ -103,36 +128,42 @@ view {model, route} =
                         [ viewList model.apps
                         , viewForm model
                         ]
+
                 Just (Route.App _) ->
                     Container.view (section [ class "highlight" ])
                         [ viewApp model
                         ]
+
                 _ ->
-                   div []
-                    [ span [] [ text "Route not found" ]
-                    ]
+                    div []
+                        [ span [] [ text "Route not found" ]
+                        ]
     in
         div []
             [ viewContext model.selected
             , view
             ]
 
+
 viewApp : Model -> Html Msg
-viewApp {selected} =
+viewApp { selected } =
     let
-        app = Maybe.withDefault (initApp) selected
+        app =
+            Maybe.withDefault (initApp) selected
     in
         h3 [] [ text ("App single view for " ++ app.name) ]
+
 
 viewContext : Maybe App -> Html Msg
 viewContext app =
     let
-        (sectionClass, info) =
+        ( sectionClass, info ) =
             case app of
                 Nothing ->
-                    ("", span [] [])
+                    ( "", span [] [] )
+
                 Just app ->
-                    ("selected", viewSelected app)
+                    ( "selected", viewSelected app )
     in
         Container.view (section [ class sectionClass, id "context" ])
             [ h2 []
@@ -144,6 +175,7 @@ viewContext app =
             , info
             ]
 
+
 viewForm : Model -> Html Msg
 viewForm model =
     form [ onSubmit Submit ]
@@ -152,21 +184,25 @@ viewForm model =
             , placeholder "Name"
             , type_ "text"
             , value model.name
-            ] []
+            ]
+            []
         , input
             [ class "description"
             , onInput Description
             , placeholder "Description"
             , type_ "text"
             , value model.description
-            ] []
+            ]
+            []
         , button [ type_ "submit" ] [ text "Create" ]
         ]
+
 
 viewItem : App -> Html Msg
 viewItem app =
     let
-        enabled = if app.enabled then
+        enabled =
+            if app.enabled then
                 span [ class "nc-icon-glyph ui-1_check-circle-07" ] []
             else
                 span [ class "nc-icon-glyph ui-1_circle-remove" ] []
@@ -177,6 +213,7 @@ viewItem app =
             , td [] [ text app.description ]
             , td [] [ text app.token ]
             ]
+
 
 viewList : List App -> Html Msg
 viewList apps =
@@ -195,6 +232,7 @@ viewList apps =
             , tbody [] (List.map viewItem apps)
             ]
 
+
 viewSelected : App -> Html Msg
 viewSelected app =
     nav []
@@ -204,12 +242,16 @@ viewSelected app =
             ]
         ]
 
+
+
 -- HTTP
+
 
 create : String -> String -> Cmd Msg
 create name description =
     Http.post "/api/apps" (encode name description) decode
-    |> Http.send New
+        |> Http.send New
+
 
 decode : Decode.Decoder App
 decode =
@@ -221,24 +263,29 @@ decode =
         (Decode.field "name" Decode.string)
         (Decode.field "token" Decode.string)
 
+
 decodeList : Decode.Decoder (List App)
 decodeList =
     Decode.at [ "apps" ] (Decode.list decode)
 
+
 encode : String -> String -> Http.Body
 encode name description =
-    Http.jsonBody (Encode.object [ ("name", Encode.string name), ("description", Encode.string description) ] )
+    Http.jsonBody (Encode.object [ ( "name", Encode.string name ), ( "description", Encode.string description ) ])
+
 
 getApp : String -> Cmd Msg
 getApp id =
     Http.send FetchApp (Http.get ("/api/apps/" ++ id) decode)
 
+
 getApps : Cmd Msg
 getApps =
     Http.send FetchApps (Http.get "/api/apps" decodeList)
 
+
 selectApp : String -> List App -> Maybe App
 selectApp id apps =
     apps
-    |> List.filter (\app -> app.id == id)
-    |> List.head
+        |> List.filter (\app -> app.id == id)
+        |> List.head
