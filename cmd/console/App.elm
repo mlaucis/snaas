@@ -1,7 +1,7 @@
 module App exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (class, href, placeholder, title, type_, value)
+import Html.Attributes exposing (class, href, id, placeholder, title, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode as Decode
@@ -58,6 +58,7 @@ type Msg
     = FetchApp (Result Http.Error App)
     | FetchApps (Result Http.Error (List App))
     | Description String
+    | List
     | Name String
     | New (Result Http.Error App)
     | Select String
@@ -76,6 +77,8 @@ update msg model =
             (model, Cmd.none)
         Description description ->
             ({ model | description = description }, Cmd.none)
+        List ->
+            ({ model | selected = Nothing }, Navigation.newUrl (Route.construct Route.Apps))
         Name name ->
             ({ model | name = name }, Cmd.none)
         New (Ok app) ->
@@ -92,18 +95,27 @@ update msg model =
 
 view : Context -> Html Msg
 view {model, route} =
-    case route of
-        Just (Route.Apps) ->
-            Container.view (section [ class "highlight" ])
-                [ viewList model.apps
-                , viewForm model
-                ]
-        Just (Route.App _) ->
-            Container.view (section [])
-                [ viewApp model
-                ]
-        _ ->
-           div [] []
+    let
+        view =
+            case route of
+                Just (Route.Apps) ->
+                    Container.view (section [ class "highlight" ])
+                        [ viewList model.apps
+                        , viewForm model
+                        ]
+                Just (Route.App _) ->
+                    Container.view (section [ class "highlight" ])
+                        [ viewApp model
+                        ]
+                _ ->
+                   div []
+                    [ span [] [ text "Route not found" ]
+                    ]
+    in
+        div []
+            [ viewContext model.selected
+            , view
+            ]
 
 viewApp : Model -> Html Msg
 viewApp {selected} =
@@ -111,6 +123,26 @@ viewApp {selected} =
         app = Maybe.withDefault (initApp) selected
     in
         h3 [] [ text ("App single view for " ++ app.name) ]
+
+viewContext : Maybe App -> Html Msg
+viewContext app =
+    let
+        (sectionClass, info) =
+            case app of
+                Nothing ->
+                    ("", span [] [])
+                Just app ->
+                    ("selected", viewSelected app)
+    in
+        Container.view (section [ class sectionClass, id "context" ])
+            [ h2 []
+                [ a [ onClick List ]
+                    [ span [ class "icon nc-icon-glyph ui-2_layers" ] []
+                    , span [] [ text "Apps" ]
+                    ]
+                ]
+            , info
+            ]
 
 viewForm : Model -> Html Msg
 viewForm model =
@@ -162,6 +194,15 @@ viewList apps =
                 ]
             , tbody [] (List.map viewItem apps)
             ]
+
+viewSelected : App -> Html Msg
+viewSelected app =
+    nav []
+        [ a [ onClick (Select app.id), title app.name ]
+            [ span [] [ text app.name ]
+            , span [ class "icon nc-icon-outline arrows-2_skew-down" ] []
+            ]
+        ]
 
 -- HTTP
 

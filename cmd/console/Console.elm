@@ -59,10 +59,7 @@ update msg model =
             in
                 ({ model | appModel = appModel }, Cmd.map AppMsg appCmd)
         LocationChange location ->
-            let
-                (routeModel, routeCmd) = Route.update (Route.Change location) model.route
-            in
-                ({ model | route = routeModel }, Cmd.map RouteMsg routeCmd)
+            init (Flags model.zone) location
         Navigate route ->
             (model, Cmd.map RouteMsg (Route.navigate route))
         RouteMsg routeMsg ->
@@ -86,64 +83,27 @@ view model =
         page = case model.route.current of
             Nothing ->
                 [ viewNotFound ]
-            Just (Route.App id) ->
-                [ viewAppContext model.appModel
-                , viewApp model
+            Just (Route.App _) ->
+                [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
                 ]
             Just Route.Apps ->
-                [ viewAppContext model.appModel
-                , viewApp model
+                [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
                 ]
             Just Route.Dashboard ->
-                [ viewDashboard ]
+                [ viewDashboard model.zone ]
             Just Route.Members ->
                 [ viewNotFound ]
     in
         div [ class "content" ]
-            [ viewHeader model
-            , div [] page
-            , viewFooter model
-            ]
+            ([ viewHeader model ] ++ page ++ [ viewFooter model ])
 
-viewApp : Model -> Html Msg
-viewApp {appModel, route} =
-    Html.map AppMsg (App.view (App.Context appModel route.current))
-
-viewAppContext : App.Model -> Html Msg
-viewAppContext model =
-    let
-        (sectionClass, info) =
-            case model.selected of
-                Nothing ->
-                    ("", span [] [])
-                Just app ->
-                    ("selected", viewAppSelected app)
-
-    in
-        Container.view (section [ class sectionClass, id "context" ])
-            [ h2 []
-                [ a [ onClick (Navigate Route.Apps), title "Apps" ]
-                    [ span [ class "icon nc-icon-glyph ui-2_layers" ] []
-                    , span [] [ text "Apps" ]
-                    ]
-                ]
-            , info
-            ]
-
-viewAppSelected : App.App -> Html Msg
-viewAppSelected app =
-    nav []
-        [ a [ onClick (Navigate (Route.App app.id)), title app.name ]
-            [ span [] [ text app.name ]
-            , span [ class "icon nc-icon-outline arrows-2_skew-down" ] []
-            ]
-        ]
-
-viewDashboard : Html Msg
-viewDashboard =
+viewDashboard : String -> Html Msg
+viewDashboard zone =
     Container.view (section [ id "dashboard" ])
         [ h2 []
-            [ text "Hej, start of by looking into"
+            [ text "Hej, welcome to your installation in"
+            , span [ class "zone" ] [ text zone ]
+            , text "start of by looking into"
             , a [ onClick (Navigate Route.Apps), title "Apps" ]
                 [ span [ class "icon nc-icon-glyph ui-2_layers" ] []
                 , text "Apps"

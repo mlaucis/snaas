@@ -81,10 +81,6 @@ h2 {
 	padding: 0rem 0rem 1.4rem 0rem;
 }
 
-section#dashboard h2 a {
-	margin: 0 2rem;
-}
-
 h2 a, h2 span.icon {
 	color: rgb(63,91,96);
 	font-weight: 500;
@@ -151,6 +147,22 @@ section#context nav span.icon {
 
 section#dashboard {
 	margin: 5rem 0;
+}
+
+section#dashboard h2 {
+	display: inline-block;
+	line-height: 1.6em;
+}
+
+section#dashboard h2 a {
+	display: inline-block;
+	margin: 0 2rem;
+}
+
+section#dashboard h2 span.zone {
+	font-style: italic;
+	margin: 0 1rem;
+	text-decoration: underline;
 }
 
 section.highlight {
