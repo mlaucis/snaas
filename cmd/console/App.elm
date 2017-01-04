@@ -7,6 +7,7 @@ import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Navigation
+import RemoteData exposing (RemoteData(..), WebData, sendRequest)
 
 import Container
 import Route
@@ -32,10 +33,10 @@ type alias Context =
 
 
 type alias Model =
-    { apps : List App
+    { apps : WebData (List App)
     , description : String
     , name : String
-    , selected : Maybe App
+    , selected : WebData App
     }
 
 
@@ -43,13 +44,13 @@ init : Maybe Route.Route -> ( Model, Cmd Msg )
 init route =
     case route of
         Just (Route.App id) ->
-            ( initModel, getApp id )
+            ( (initModel NotAsked Loading), getApp id )
 
         Just (Route.Apps) ->
-            ( initModel, getApps )
+            ( (initModel Loading NotAsked), getApps )
 
         _ ->
-            ( initModel, Cmd.none )
+            ( (initModel NotAsked NotAsked), Cmd.none )
 
 
 initApp : App
@@ -57,18 +58,17 @@ initApp =
     App "" "" False "" "" ""
 
 
-initModel : Model
-initModel =
-    Model [] "" "" Nothing
-
+initModel : WebData (List App) -> WebData App -> Model
+initModel apps app =
+    Model apps "" "" app
 
 
 -- UPDATE
 
 
 type Msg
-    = FetchApp (Result Http.Error App)
-    | FetchApps (Result Http.Error (List App))
+    = FetchApp (WebData App)
+    | FetchApps (WebData (List App))
     | Description String
     | List
     | Name String
@@ -80,39 +80,34 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        FetchApp (Ok app) ->
-            ( { model | selected = (Just app) }, Cmd.none )
+        FetchApp response ->
+            ( { model | selected = response }, Cmd.none )
 
-        FetchApp (Err _) ->
-            ( model, Cmd.none )
-
-        FetchApps (Ok apps) ->
-            ( { model | apps = apps, selected = Nothing }, Cmd.none )
-
-        FetchApps (Err _) ->
-            ( model, Cmd.none )
+        FetchApps response ->
+            ( { model | apps = response, selected = NotAsked }, Cmd.none )
 
         Description description ->
             ( { model | description = description }, Cmd.none )
 
         List ->
-            ( { model | selected = Nothing }, Navigation.newUrl (Route.construct Route.Apps) )
+            ( model, Navigation.newUrl (Route.construct Route.Apps) )
 
         Name name ->
             ( { model | name = name }, Cmd.none )
 
         New (Ok app) ->
-            ( { model | apps = model.apps ++ [ app ], description = "", name = "" }, Cmd.none )
+            -- TODO optimistic append with WebData.
+            --( { model | apps = model.apps ++ [ app ], description = "", name = "" }, Cmd.none )
+            ( { model | description = "", name = "" }, Cmd.none )
 
         New (Err _) ->
             ( model, Cmd.none )
 
         Select id ->
-            ( { model | selected = (selectApp id model.apps) }, Navigation.newUrl (Route.construct (Route.App id)) )
+            ( model, Navigation.newUrl (Route.construct (Route.App id)) )
 
         Submit ->
             ( model, create model.name model.description )
-
 
 
 -- VIEW
@@ -147,23 +142,31 @@ view { model, route } =
 
 viewApp : Model -> Html Msg
 viewApp { selected } =
-    let
-        app =
-            Maybe.withDefault (initApp) selected
-    in
-        h3 [] [ text ("App single view for " ++ app.name) ]
+    case selected of
+        NotAsked ->
+            h3 [] [ text "Initialising" ]
+
+        Loading ->
+            h3 [] [ text "Loading" ]
+
+        Failure err ->
+            h3 [] [ text ("Error: " ++ toString err) ]
+
+        Success app ->
+            h3 [] [ text ("App single view for " ++ app.name) ]
 
 
-viewContext : Maybe App -> Html Msg
+viewContext : WebData App -> Html Msg
 viewContext app =
     let
         ( sectionClass, info ) =
             case app of
-                Nothing ->
-                    ( "", span [] [] )
-
-                Just app ->
+                Success app ->
                     ( "selected", viewSelected app )
+
+                _ ->
+                    ( "selected", span [] [] )
+
     in
         Container.view (section [ class sectionClass, id "context" ])
             [ h2 []
@@ -215,22 +218,33 @@ viewItem app =
             ]
 
 
-viewList : List App -> Html Msg
+viewList : WebData (List App) -> Html Msg
 viewList apps =
-    if List.length apps == 0 then
-        h3 [] [ text "Looks like you haven't created an App yet." ]
-    else
-        table []
-            [ thead []
-                [ tr []
-                    [ th [ class "status" ] [ text "status" ]
-                    , th [] [ text "name" ]
-                    , th [] [ text "description" ]
-                    , th [] [ text "token" ]
+    case apps of
+        NotAsked ->
+            h3 [] [ text "Initialising" ]
+
+        Loading ->
+            h3 [] [ text "Loading" ]
+
+        Failure err ->
+            h3 [] [ text ("Error: " ++ toString err) ]
+
+        Success apps ->
+            if List.length apps == 0 then
+                h3 [] [ text "Looks like you haven't created an App yet." ]
+            else
+                table []
+                    [ thead []
+                        [ tr []
+                            [ th [ class "status" ] [ text "status" ]
+                            , th [] [ text "name" ]
+                            , th [] [ text "description" ]
+                            , th [] [ text "token" ]
+                            ]
+                        ]
+                    , tbody [] (List.map viewItem apps)
                     ]
-                ]
-            , tbody [] (List.map viewItem apps)
-            ]
 
 
 viewSelected : App -> Html Msg
@@ -241,7 +255,6 @@ viewSelected app =
             , span [ class "icon nc-icon-outline arrows-2_skew-down" ] []
             ]
         ]
-
 
 
 -- HTTP
@@ -276,16 +289,12 @@ encode name description =
 
 getApp : String -> Cmd Msg
 getApp id =
-    Http.send FetchApp (Http.get ("/api/apps/" ++ id) decode)
-
+    Http.get ("/api/apps/" ++ id) decode
+        |> sendRequest
+        |> Cmd.map FetchApp
 
 getApps : Cmd Msg
 getApps =
-    Http.send FetchApps (Http.get "/api/apps" decodeList)
-
-
-selectApp : String -> List App -> Maybe App
-selectApp id apps =
-    apps
-        |> List.filter (\app -> app.id == id)
-        |> List.head
+    Http.get "/api/apps" decodeList
+        |> sendRequest
+        |> Cmd.map FetchApps

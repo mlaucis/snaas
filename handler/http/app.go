@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -45,6 +46,8 @@ func AppList(fn core.AppListFunc) Handler {
 			return
 		}
 
+		time.Sleep(1 * time.Second)
+
 		respondJSON(w, http.StatusOK, &payloadApps{apps: as})
 	}
 }
@@ -63,6 +66,8 @@ func AppRetrieve(fn core.AppFetchFunc) Handler {
 			respondError(w, 0, err)
 			return
 		}
+
+		time.Sleep(1 * time.Second)
 
 		respondJSON(w, http.StatusOK, &payloadApp{app: a})
 	}

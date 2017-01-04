@@ -19,7 +19,6 @@ main =
         }
 
 
-
 -- MODEL
 
 
@@ -48,7 +47,6 @@ init { zone } location =
             ! [ Cmd.map RouteMsg routeCmd
               , Cmd.map AppMsg appCmd
               ]
-
 
 
 -- UPDATE
@@ -85,14 +83,12 @@ update msg model =
                 ( { model | route = routeModel }, Cmd.map RouteMsg routeCmd )
 
 
-
 -- SUBSCRIPTION
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
-
 
 
 -- VIEW
