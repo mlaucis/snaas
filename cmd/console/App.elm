@@ -36,6 +36,7 @@ type alias Model =
     { apps : WebData (List App)
     , description : String
     , name : String
+    , new : WebData App
     , selected : WebData App
     }
 
@@ -60,7 +61,7 @@ initApp =
 
 initModel : WebData (List App) -> WebData App -> Model
 initModel apps app =
-    Model apps "" "" app
+    Model apps "" "" NotAsked app
 
 
 -- UPDATE
@@ -70,12 +71,11 @@ type Msg
     = FetchApp (WebData App)
     | FetchApps (WebData (List App))
     | Description String
-    | List
+    | ListApps
     | Name String
-    | New (Result Http.Error App)
+    | New (WebData App)
     | Select String
     | Submit
-
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -89,25 +89,20 @@ update msg model =
         Description description ->
             ( { model | description = description }, Cmd.none )
 
-        List ->
+        ListApps ->
             ( model, Navigation.newUrl (Route.construct Route.Apps) )
 
         Name name ->
             ( { model | name = name }, Cmd.none )
 
-        New (Ok app) ->
-            -- TODO optimistic append with WebData.
-            --( { model | apps = model.apps ++ [ app ], description = "", name = "" }, Cmd.none )
-            ( { model | description = "", name = "" }, Cmd.none )
-
-        New (Err _) ->
-            ( model, Cmd.none )
+        New response ->
+            ( { model | apps = (combineApps model.apps response), new = NotAsked, description = "", name = "" }, Cmd.none )
 
         Select id ->
             ( model, Navigation.newUrl (Route.construct (Route.App id)) )
 
         Submit ->
-            ( model, create model.name model.description )
+            ( { model | new = Loading }, create model.name model.description )
 
 
 -- VIEW
@@ -170,7 +165,7 @@ viewContext app =
     in
         Container.view (section [ class sectionClass, id "context" ])
             [ h2 []
-                [ a [ onClick List ]
+                [ a [ onClick ListApps ]
                     [ span [ class "icon nc-icon-glyph ui-2_layers" ] []
                     , span [] [ text "Apps" ]
                     ]
@@ -181,25 +176,39 @@ viewContext app =
 
 viewForm : Model -> Html Msg
 viewForm model =
-    form [ onSubmit Submit ]
-        [ input
-            [ onInput Name
-            , placeholder "Name"
-            , type_ "text"
-            , value model.name
-            ]
-            []
-        , input
-            [ class "description"
-            , onInput Description
-            , placeholder "Description"
-            , type_ "text"
-            , value model.description
-            ]
-            []
-        , button [ type_ "submit" ] [ text "Create" ]
-        ]
+    let
+        createForm =
+            form [ onSubmit Submit ]
+                [ input
+                    [ onInput Name
+                    , placeholder "Name"
+                    , type_ "text"
+                    , value model.name
+                    ]
+                    []
+                , input
+                    [ class "description"
+                    , onInput Description
+                    , placeholder "Description"
+                    , type_ "text"
+                    , value model.description
+                    ]
+                    []
+                , button [ type_ "submit" ] [ text "Create" ]
+                ]
+    in
+        case model.new of
+            NotAsked ->
+                createForm
 
+            Loading ->
+                text "Creating..."
+
+            Failure err ->
+                text ("Failed: " ++ toString err)
+
+            Success _ ->
+                createForm
 
 viewItem : App -> Html Msg
 viewItem app =
@@ -263,7 +272,8 @@ viewSelected app =
 create : String -> String -> Cmd Msg
 create name description =
     Http.post "/api/apps" (encode name description) decode
-        |> Http.send New
+        |> sendRequest
+        |> Cmd.map New
 
 
 decode : Decode.Decoder App
@@ -284,7 +294,11 @@ decodeList =
 
 encode : String -> String -> Http.Body
 encode name description =
-    Http.jsonBody (Encode.object [ ( "name", Encode.string name ), ( "description", Encode.string description ) ])
+    Encode.object
+        [ ( "name", Encode.string name )
+        , ( "description", Encode.string description )
+        ]
+        |> Http.jsonBody
 
 
 getApp : String -> Cmd Msg
@@ -298,3 +312,20 @@ getApps =
     Http.get "/api/apps" decodeList
         |> sendRequest
         |> Cmd.map FetchApps
+
+
+-- HELPER
+
+
+combineApps apps app =
+    case (RemoteData.toMaybe app) of
+        Nothing ->
+            apps
+
+        Just app ->
+            case (RemoteData.toMaybe apps) of
+                Nothing ->
+                    RemoteData.succeed [ app ]
+
+                Just apps ->
+                    RemoteData.succeed (apps ++ [ app ])

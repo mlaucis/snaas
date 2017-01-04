@@ -106,14 +106,14 @@ view model =
                     [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
                     ]
 
-                Just (Route.Apps) ->
+                Just Route.Apps ->
                     [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
                     ]
 
-                Just (Route.Dashboard) ->
+                Just Route.Dashboard ->
                     [ viewDashboard model.zone ]
 
-                Just (Route.Members) ->
+                Just Route.Members ->
                     [ viewNotFound ]
     in
         div [ class "content" ]

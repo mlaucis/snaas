@@ -28,6 +28,8 @@ func AppCreate(fn core.AppCreateFunc) Handler {
 			return
 		}
 
+		time.Sleep(500 * time.Millisecond)
+
 		respondJSON(w, http.StatusOK, &payloadApp{app: a})
 	}
 }
@@ -41,12 +43,7 @@ func AppList(fn core.AppListFunc) Handler {
 			return
 		}
 
-		if len(as) == 0 {
-			respondJSON(w, http.StatusNoContent, nil)
-			return
-		}
-
-		time.Sleep(1 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 
 		respondJSON(w, http.StatusOK, &payloadApps{apps: as})
 	}
@@ -67,7 +64,7 @@ func AppRetrieve(fn core.AppFetchFunc) Handler {
 			return
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 
 		respondJSON(w, http.StatusOK, &payloadApp{app: a})
 	}
