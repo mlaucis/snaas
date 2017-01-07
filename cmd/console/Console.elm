@@ -1,9 +1,12 @@
 module Console exposing (..)
 
+import AnimationFrame
 import Html exposing (..)
 import Html.Attributes exposing (class, href, id, placeholder, title, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Navigation
+import Time exposing (Time)
+
 import App
 import Container
 import Route
@@ -19,6 +22,7 @@ main =
         }
 
 
+
 -- MODEL
 
 
@@ -30,6 +34,8 @@ type alias Flags =
 type alias Model =
     { appModel : App.Model
     , route : Route.Model
+    , startTime : Time
+    , time : Time
     , zone : String
     }
 
@@ -43,10 +49,11 @@ init { zone } location =
         ( appModel, appCmd ) =
             App.init routeModel.current
     in
-        (Model appModel routeModel zone)
+        (Model appModel routeModel 0 0 zone)
             ! [ Cmd.map RouteMsg routeCmd
               , Cmd.map AppMsg appCmd
               ]
+
 
 
 -- UPDATE
@@ -57,6 +64,7 @@ type Msg
     | LocationChange Navigation.Location
     | Navigate Route.Route
     | RouteMsg Route.Msg
+    | Tick Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -82,13 +90,25 @@ update msg model =
             in
                 ( { model | route = routeModel }, Cmd.map RouteMsg routeCmd )
 
+        Tick time ->
+            let
+                startTime =
+                    if model.startTime == 0 then
+                        time
+                    else
+                        model.startTime
+            in
+                ( { model | startTime = startTime, time = time }, Cmd.none )
+
+
 
 -- SUBSCRIPTION
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    AnimationFrame.times Tick
+
 
 
 -- VIEW
@@ -103,17 +123,17 @@ view model =
                     [ viewNotFound ]
 
                 Just (Route.App _) ->
-                    [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
+                    [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current model.startTime model.time))
                     ]
 
-                Just Route.Apps ->
-                    [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current))
+                Just (Route.Apps) ->
+                    [ Html.map AppMsg (App.view (App.Context model.appModel model.route.current model.startTime model.time))
                     ]
 
-                Just Route.Dashboard ->
+                Just (Route.Dashboard) ->
                     [ viewDashboard model.zone ]
 
-                Just Route.Members ->
+                Just (Route.Members) ->
                     [ viewNotFound ]
     in
         div [ class "content" ]
@@ -149,7 +169,9 @@ viewDebug model =
 
 viewFooter : Model -> Html Msg
 viewFooter model =
-    Container.view (footer []) [ viewDebug model ]
+    Container.view (footer [])
+        [ viewDebug model
+        ]
 
 
 viewHeader : Model -> Html Msg

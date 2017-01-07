@@ -1,6 +1,7 @@
 module App exposing (..)
 
-import Html exposing (..)
+import Color exposing (rgb)
+import Html exposing (Html, a, button, div, form, h2, h3, input, nav, section, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, href, id, placeholder, title, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
@@ -8,8 +9,10 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Navigation
 import RemoteData exposing (RemoteData(..), WebData, sendRequest)
+import Time exposing (Time)
 
 import Container
+import Loader
 import Route
 
 
@@ -29,6 +32,8 @@ type alias App =
 type alias Context =
     { model : Model
     , route : Maybe Route.Route
+    , startTime : Time
+    , time : Time
     }
 
 
@@ -64,6 +69,7 @@ initModel apps app =
     Model apps "" "" NotAsked app
 
 
+
 -- UPDATE
 
 
@@ -76,6 +82,7 @@ type Msg
     | New (WebData App)
     | Select String
     | Submit
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -105,23 +112,21 @@ update msg model =
             ( { model | new = Loading }, create model.name model.description )
 
 
+
 -- VIEW
 
 
 view : Context -> Html Msg
-view { model, route } =
+view { model, route, startTime, time } =
     let
         view =
             case route of
                 Just (Route.Apps) ->
-                    Container.view (section [ class "highlight" ])
-                        [ viewList model.apps
-                        , viewForm model
-                        ]
+                    viewList model startTime time
 
                 Just (Route.App _) ->
                     Container.view (section [ class "highlight" ])
-                        [ viewApp model
+                        [ viewApp model startTime time
                         ]
 
                 _ ->
@@ -135,14 +140,14 @@ view { model, route } =
             ]
 
 
-viewApp : Model -> Html Msg
-viewApp { selected } =
+viewApp : Model -> Time -> Time -> Html Msg
+viewApp { selected } startTime time =
     case selected of
         NotAsked ->
             h3 [] [ text "Initialising" ]
 
         Loading ->
-            h3 [] [ text "Loading" ]
+            Loader.view 64 (rgb 63 91 96) (Loader.nextStep startTime time)
 
         Failure err ->
             h3 [] [ text ("Error: " ++ toString err) ]
@@ -161,7 +166,6 @@ viewContext app =
 
                 _ ->
                     ( "selected", span [] [] )
-
     in
         Container.view (section [ class sectionClass, id "context" ])
             [ h2 []
@@ -174,8 +178,8 @@ viewContext app =
             ]
 
 
-viewForm : Model -> Html Msg
-viewForm model =
+viewForm : Model -> Time -> Time -> Html Msg
+viewForm model startTime time =
     let
         createForm =
             form [ onSubmit Submit ]
@@ -202,13 +206,14 @@ viewForm model =
                 createForm
 
             Loading ->
-                text "Creating..."
+                Loader.view 48 (rgb 63 91 96) (Loader.nextStep startTime time)
 
             Failure err ->
                 text ("Failed: " ++ toString err)
 
             Success _ ->
                 createForm
+
 
 viewItem : App -> Html Msg
 viewItem app =
@@ -227,33 +232,45 @@ viewItem app =
             ]
 
 
-viewList : WebData (List App) -> Html Msg
-viewList apps =
-    case apps of
-        NotAsked ->
-            h3 [] [ text "Initialising" ]
-
-        Loading ->
-            h3 [] [ text "Loading" ]
-
-        Failure err ->
-            h3 [] [ text ("Error: " ++ toString err) ]
-
-        Success apps ->
-            if List.length apps == 0 then
-                h3 [] [ text "Looks like you haven't created an App yet." ]
-            else
-                table []
-                    [ thead []
-                        [ tr []
-                            [ th [ class "status" ] [ text "status" ]
-                            , th [] [ text "name" ]
-                            , th [] [ text "description" ]
-                            , th [] [ text "token" ]
-                            ]
-                        ]
-                    , tbody [] (List.map viewItem apps)
+viewList : Model -> Time -> Time -> Html Msg
+viewList model startTime time =
+    let
+        content =
+            case model.apps of
+                NotAsked ->
+                    [ h3 [] [ text "Initialising" ]
                     ]
+
+                Loading ->
+                    [ Loader.view 64 (rgb 63 91 96) (Loader.nextStep startTime time)
+                    ]
+
+                Failure err ->
+                    [ h3 [] [ text ("Error: " ++ toString err) ]
+                    ]
+
+                Success apps ->
+                    if List.length apps == 0 then
+                        [ h3 [] [ text "Looks like you haven't created an App yet." ]
+                        , viewForm model startTime time
+                        ]
+                    else
+                        [ table []
+                            [ thead []
+                                [ tr []
+                                    [ th [ class "status" ] [ text "status" ]
+                                    , th [] [ text "name" ]
+                                    , th [] [ text "description" ]
+                                    , th [] [ text "token" ]
+                                    ]
+                                ]
+                            , tbody [] (List.map viewItem apps)
+                            ]
+                        , viewForm model startTime time
+                        ]
+    in
+        Container.view (section [ class "highlight" ])
+            content
 
 
 viewSelected : App -> Html Msg
@@ -264,6 +281,7 @@ viewSelected app =
             , span [ class "icon nc-icon-outline arrows-2_skew-down" ] []
             ]
         ]
+
 
 
 -- HTTP
@@ -307,6 +325,7 @@ getApp id =
         |> sendRequest
         |> Cmd.map FetchApp
 
+
 getApps : Cmd Msg
 getApps =
     Http.get "/api/apps" decodeList
@@ -314,9 +333,11 @@ getApps =
         |> Cmd.map FetchApps
 
 
+
 -- HELPER
 
 
+combineApps : WebData (List App) -> WebData App -> WebData (List App)
 combineApps apps app =
     case (RemoteData.toMaybe app) of
         Nothing ->

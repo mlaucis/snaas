@@ -52,6 +52,13 @@ div.content {
 	width: 100%;
 }
 
+div.loader {
+	align-items: center;
+	display: flex;
+	justify-content: center;
+	padding: 6rem 0rem;
+}
+
 footer {
 	margin-top: 10rem;
 }
