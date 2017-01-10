@@ -3,41 +3,13 @@ module Route exposing (..)
 import Navigation exposing (Location, newUrl)
 import UrlParser exposing (Parser, (</>), map, oneOf, parsePath, top, s, string)
 
-
 -- MODEL
-
-
-type alias Model =
-    { current : Maybe Route
-    }
-
 
 type Route
     = App String
     | Apps
     | Dashboard
     | Members
-
-
-init : Location -> ( Model, Cmd Msg )
-init location =
-    ( Model (parse location), Cmd.none )
-
-
-
---  UPDATE
-
-
-type Msg
-    = Change Location
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Change location ->
-            ( { model | current = (parse location) }, Cmd.none )
-
 
 
 -- HELPER
@@ -52,14 +24,14 @@ construct route =
         Apps ->
             "/apps"
 
-        Dashboard ->
-            "/"
-
         Members ->
             "/members"
 
+        Dashboard ->
+            "/"
 
-navigate : Route -> Cmd Msg
+
+navigate : Route -> Cmd msg
 navigate route =
     newUrl (construct route)
 
