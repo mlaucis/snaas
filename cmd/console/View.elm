@@ -8,7 +8,8 @@ import RemoteData exposing (RemoteData(Failure, Loading, NotAsked, Success), Web
 import Time exposing (Time)
 
 import Action exposing (..)
-import App exposing (App)
+import App.Model exposing (App)
+import App.View exposing (viewAppItem, viewAppsContext, viewAppsTable)
 import Container
 import Loader
 import Model exposing (Model)
@@ -55,7 +56,7 @@ pageApp {app, startTime, time} =
                     h3 [] [ text ("App single view for " ++ app.name) ]
     in
         div []
-            [ viewAppContext app
+            [ viewAppsContext (Navigate Route.Apps) app
             , Container.view (section [ class "highlight" ])
                 [ view
                 ]
@@ -64,6 +65,9 @@ pageApp {app, startTime, time} =
 pageApps : Model -> Html Msg
 pageApps {app, apps, appDescription, appName, newApp, startTime, time} =
     let
+        viewItem =
+            (\app -> viewAppItem (SelectApp app.id) app)
+
         content =
             case apps of
                 NotAsked ->
@@ -84,22 +88,12 @@ pageApps {app, apps, appDescription, appName, newApp, startTime, time} =
                         , viewAppForm newApp appName appDescription startTime time
                         ]
                     else
-                        [ table []
-                            [ thead []
-                                [ tr []
-                                    [ th [ class "status" ] [ text "status" ]
-                                    , th [] [ text "name" ]
-                                    , th [] [ text "description" ]
-                                    , th [] [ text "token" ]
-                                    ]
-                                ]
-                            , tbody [] (List.map viewAppItem apps)
-                            ]
+                        [ viewAppsTable viewItem apps
                         , viewAppForm newApp appName appDescription startTime time
                         ]
     in
         div []
-            [ viewAppContext app
+            [ viewAppsContext (Navigate Route.Apps) app
             , Container.view (section [ class "highlight" ]) content
             ]
 
@@ -127,28 +121,6 @@ pageNotFound =
     Container.view (section [ class "highlight" ])
         [ h3 [] [ text "Looks like we couldn't find the page you were looking for." ]
         ]
-
-
-viewAppContext : WebData App -> Html Msg
-viewAppContext app =
-    let
-        ( sectionClass, info ) =
-            case app of
-                Success app ->
-                    ( "selected", viewAppSelected app )
-
-                _ ->
-                    ( "selected", span [] [] )
-    in
-        Container.view (section [ class sectionClass, id "context" ])
-            [ h2 []
-                [ a [ onClick ListApps ]
-                    [ span [ class "icon nc-icon-glyph ui-2_layers" ] []
-                    , span [] [ text "Apps" ]
-                    ]
-                ]
-            , info
-            ]
 
 viewAppForm : WebData App -> String -> String -> Time -> Time -> Html Msg
 viewAppForm new name description startTime time =
@@ -185,31 +157,6 @@ viewAppForm new name description startTime time =
 
             Success _ ->
                 createForm
-
-viewAppItem : App -> Html Msg
-viewAppItem app =
-    let
-        enabled =
-            if app.enabled then
-                span [ class "nc-icon-glyph ui-1_check-circle-07" ] []
-            else
-                span [ class "nc-icon-glyph ui-1_circle-remove" ] []
-    in
-        tr [ onClick (SelectApp app.id) ]
-            [ td [ class "status" ] [ enabled ]
-            , td [] [ text app.name ]
-            , td [] [ text app.description ]
-            , td [] [ text app.token ]
-            ]
-
-viewAppSelected : App -> Html Msg
-viewAppSelected app =
-    nav []
-        [ a [ onClick (SelectApp app.id), title app.name ]
-            [ span [] [ text app.name ]
-            , span [ class "icon nc-icon-outline arrows-2_skew-down" ] []
-            ]
-        ]
 
 viewDebug : Model -> Html Msg
 viewDebug model =

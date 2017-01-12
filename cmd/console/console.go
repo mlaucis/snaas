@@ -55,7 +55,7 @@ var (
   </head>
   <body>
     <script type="text/javascript">
-      Elm.Console.fullscreen({zone: "{{.Zone}}"});
+      Elm.Main.fullscreen({zone: "{{.Zone}}"});
     </script>
  </body>
 </html>`

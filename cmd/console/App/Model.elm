@@ -1,4 +1,4 @@
-module App exposing (App, decode, decodeList, encode)
+module App.Model exposing (App, decode, decodeList, encode)
 
 import Http
 import Json.Decode as Decode

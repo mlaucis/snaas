@@ -1,9 +1,9 @@
 module Update exposing (update)
-
-import Action exposing (Msg(..))
-import Api exposing (createApp)
 import Model exposing (Flags, Model, init)
 import RemoteData exposing (RemoteData(Loading, NotAsked), WebData)
+
+import Action exposing (Msg(..))
+import App.Api exposing (createApp)
 import Route
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -37,7 +37,7 @@ update msg model =
             ( model, Cmd.map LocationChange (Route.navigate (Route.App id)) )
 
         SubmitAppForm ->
-            ( { model | newApp = Loading }, createApp model.appName model.appDescription )
+            ( { model | newApp = Loading }, Cmd.map NewApp (createApp model.appName model.appDescription) )
 
         Tick time ->
             let
@@ -48,6 +48,8 @@ update msg model =
                         model.startTime
             in
                 ( { model | startTime = startTime, time = time }, Cmd.none )
+
+-- HELPER
 
 appendWebData : WebData (List a) -> WebData a -> WebData (List a)
 appendWebData list single =

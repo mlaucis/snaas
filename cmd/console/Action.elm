@@ -4,7 +4,7 @@ import Navigation exposing (Location)
 import RemoteData exposing (WebData)
 import Time exposing (Time)
 
-import App exposing (App)
+import App.Model exposing (App)
 import Route exposing (Route)
 
 type Msg
@@ -14,7 +14,7 @@ type Msg
     | FetchApps (WebData (List App))
     | ListApps
     | LocationChange Location
-    | Navigate Route.Route
+    | Navigate Route
     | NewApp (WebData App)
     | SelectApp String
     | SubmitAppForm

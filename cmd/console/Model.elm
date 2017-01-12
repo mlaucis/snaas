@@ -5,8 +5,8 @@ import RemoteData exposing (RemoteData(..), WebData)
 import Time exposing (Time)
 
 import Action exposing (..)
-import Api exposing (getApp, getApps)
-import App exposing (App)
+import App.Api exposing (getApp, getApps)
+import App.Model exposing (App)
 import Route exposing (Route, parse)
 
 type alias Flags =
@@ -34,10 +34,10 @@ init { zone } location =
     in
         case route of
             Just (Route.App id) ->
-                ( (model Loading NotAsked), getApp id )
+                ( (model Loading NotAsked), Cmd.map FetchApp (getApp id) )
 
             Just (Route.Apps) ->
-                ( (model NotAsked Loading), getApps )
+                ( (model NotAsked Loading), Cmd.map FetchApps getApps )
 
             _ ->
                 ( (model NotAsked NotAsked), Cmd.none)
