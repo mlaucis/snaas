@@ -8,8 +8,10 @@ import App.Model exposing (App)
 import Route exposing (Route)
 
 type Msg
-    = AppDescription String
-    | AppName String
+    = AppFormBlur String
+    | AppFormFocus String
+    | AppFormSubmit
+    | AppFormUpdate String String
     | FetchApp (WebData App)
     | FetchApps (WebData (List App))
     | ListApps
@@ -17,5 +19,4 @@ type Msg
     | Navigate Route
     | NewApp (WebData App)
     | SelectApp String
-    | SubmitAppForm
     | Tick Time

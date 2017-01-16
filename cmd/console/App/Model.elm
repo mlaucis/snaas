@@ -1,8 +1,10 @@
-module App.Model exposing (App, decode, decodeList, encode)
+module App.Model exposing (App, decode, decodeList, encode, initAppForm)
 
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
+
+import Formo exposing (Form, initForm)
 
 -- MODEL
 
@@ -16,6 +18,8 @@ type alias App =
     , token : String
     }
 
+
+-- DECODERS
 
 decode : Decode.Decoder App
 decode =
@@ -41,3 +45,13 @@ encode name description =
         ]
         |> Http.jsonBody
 
+
+-- FORM
+
+
+initAppForm : Form
+initAppForm =
+    initForm
+        [ ( "description", [] )
+        , ( "name", [] )
+        ]

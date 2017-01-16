@@ -1,8 +1,8 @@
 module App.View exposing (viewAppItem, viewAppsContext, viewAppsTable)
 
-import Html exposing (Html, a, h2, nav, section, span, table, tbody, td, th, thead, tr, text)
-import Html.Attributes exposing (class, id, title)
-import Html.Events exposing (onClick)
+import Html exposing (Html, a, div, h2, input, nav, section, small, span, table, tbody, td, th, thead, tr, text)
+import Html.Attributes exposing (class, id, placeholder, title, type_, value)
+import Html.Events exposing (onClick, onInput)
 import RemoteData exposing (RemoteData(Success), WebData)
 
 import App.Model exposing (App)

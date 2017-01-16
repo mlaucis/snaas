@@ -1,9 +1,10 @@
 module View exposing (view)
 
+import Char
 import Color exposing (rgb)
 import Html exposing (..)
 import Html.Attributes exposing (class, href, id, placeholder, title, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Events exposing (onClick, onFocus, onInput, onSubmit)
 import RemoteData exposing (RemoteData(Failure, Loading, NotAsked, Success), WebData)
 import Time exposing (Time)
 
@@ -11,6 +12,7 @@ import Action exposing (..)
 import App.Model exposing (App)
 import App.View exposing (viewAppItem, viewAppsContext, viewAppsTable)
 import Container
+import Formo exposing (Form, elementError, elementValue)
 import Loader
 import Model exposing (Model)
 import Route
@@ -63,7 +65,7 @@ pageApp {app, startTime, time} =
             ]
 
 pageApps : Model -> Html Msg
-pageApps {app, apps, appDescription, appName, newApp, startTime, time} =
+pageApps {app, apps, appForm, newApp, startTime, time} =
     let
         viewItem =
             (\app -> viewAppItem (SelectApp app.id) app)
@@ -85,11 +87,11 @@ pageApps {app, apps, appDescription, appName, newApp, startTime, time} =
                 Success apps ->
                     if List.length apps == 0 then
                         [ h3 [] [ text "Looks like you haven't created an App yet." ]
-                        , viewAppForm newApp appName appDescription startTime time
+                        , formApp newApp appForm startTime time
                         ]
                     else
                         [ viewAppsTable viewItem apps
-                        , viewAppForm newApp appName appDescription startTime time
+                        , formApp newApp appForm startTime time
                         ]
     in
         div []
@@ -122,42 +124,6 @@ pageNotFound =
         [ h3 [] [ text "Looks like we couldn't find the page you were looking for." ]
         ]
 
-viewAppForm : WebData App -> String -> String -> Time -> Time -> Html Msg
-viewAppForm new name description startTime time =
-    let
-        createForm =
-            form [ onSubmit SubmitAppForm ]
-                [ input
-                    [ onInput AppName
-                    , placeholder "Name"
-                    , type_ "text"
-                    , value name
-                    ]
-                    []
-                , input
-                    [ class "description"
-                    , onInput AppDescription
-                    , placeholder "Description"
-                    , type_ "text"
-                    , value description
-                    ]
-                    []
-                , button [ type_ "submit" ] [ text "Create" ]
-                ]
-    in
-        case new of
-            NotAsked ->
-                createForm
-
-            Loading ->
-                Loader.view 48 (rgb 63 91 96) (Loader.nextStep startTime time)
-
-            Failure err ->
-                text ("Failed: " ++ toString err)
-
-            Success _ ->
-                createForm
-
 viewDebug : Model -> Html Msg
 viewDebug model =
     div [ class "debug" ]
@@ -183,3 +149,58 @@ viewFooter model =
     Container.view (footer [])
         [ viewDebug model
         ]
+
+
+-- FORM
+
+
+formApp : WebData App -> Form -> Time -> Time -> Html Msg
+formApp new appForm startTime time =
+    let
+        createForm =
+            form [ onSubmit AppFormSubmit ]
+                [ formElementText (AppFormFocus "name") (AppFormUpdate "name") appForm "name"
+                , formElementText (AppFormFocus "description") (AppFormUpdate "description") appForm "description"
+                , button [ type_ "submit" ] [ text "Create" ]
+                ]
+    in
+        case new of
+            NotAsked ->
+                createForm
+
+            Loading ->
+                Loader.view 48 (rgb 63 91 96) (Loader.nextStep startTime time)
+
+            Failure err ->
+                text ("Failed: " ++ toString err)
+
+            Success _ ->
+                createForm
+
+formElementText : Msg -> (String -> Msg) -> Form -> String -> Html Msg
+formElementText focusMsg inputMsg form field =
+    div [ class "form-group" ]
+        [ input
+            [ class field
+            , onFocus focusMsg
+            , onInput inputMsg
+            , placeholder (capitalise field)
+            , type_ "text"
+            , value (elementValue form field)
+            ]
+            []
+        , span []
+            [ text (elementError form field) ]
+        ]
+
+
+-- HELPER
+
+capitalise : String -> String
+capitalise s =
+    case String.uncons s of
+        Nothing ->
+            ""
+
+        Just (head, tail) ->
+            String.cons (Char.toUpper head) tail

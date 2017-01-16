@@ -6,7 +6,8 @@ import Time exposing (Time)
 
 import Action exposing (..)
 import App.Api exposing (getApp, getApps)
-import App.Model exposing (App)
+import App.Model exposing (App, initAppForm)
+import Formo exposing (Form)
 import Route exposing (Route, parse)
 
 type alias Flags =
@@ -16,8 +17,8 @@ type alias Flags =
 type alias Model =
     { app : WebData App
     , apps : WebData (List App)
-    , appDescription : String
-    , appName : String
+    , appForm : Form
+    , focus : String
     , newApp : WebData App
     , route : Maybe Route
     , startTime : Time
@@ -44,4 +45,4 @@ init { zone } location =
 
 initModel : String -> Maybe Route -> WebData App -> WebData (List App) -> Model
 initModel zone route app apps =
-    Model app apps "" "" NotAsked route 0 0 zone
+    Model app apps initAppForm "" NotAsked route 0 0 zone

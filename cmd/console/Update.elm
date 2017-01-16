@@ -1,19 +1,28 @@
 module Update exposing (update)
-import Model exposing (Flags, Model, init)
+
 import RemoteData exposing (RemoteData(Loading, NotAsked), WebData)
 
 import Action exposing (Msg(..))
+import Formo exposing (blurElement, elementValue, focusElement, updateElementValue)
+import Model exposing (Flags, Model, init)
 import App.Api exposing (createApp)
+import App.Model exposing (initAppForm)
 import Route
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        AppDescription description ->
-            ( { model | appDescription = description }, Cmd.none )
+        AppFormBlur field ->
+            ( { model | appForm = blurElement model.appForm field }, Cmd.none )
 
-        AppName name ->
-            ( { model | appName = name }, Cmd.none )
+        AppFormFocus field ->
+            ( { model | appForm = focusElement model.appForm field }, Cmd.none )
+
+        AppFormSubmit ->
+            ( { model | newApp = Loading }, Cmd.map NewApp (createApp (elementValue model.appForm "name") (elementValue model.appForm "description") ) )
+
+        AppFormUpdate field value ->
+            ( { model | appForm = updateElementValue model.appForm field value }, Cmd.none )
 
         FetchApp response ->
             ( { model | app = response }, Cmd.none )
@@ -31,13 +40,10 @@ update msg model =
             ( model, Cmd.map LocationChange (Route.navigate route) )
 
         NewApp response ->
-            ( { model | apps = (appendWebData model.apps response), newApp = NotAsked }, Cmd.none )
+            ( { model | appForm = initAppForm, apps = (appendWebData model.apps response), newApp = NotAsked }, Cmd.none )
 
         SelectApp id ->
             ( model, Cmd.map LocationChange (Route.navigate (Route.App id)) )
-
-        SubmitAppForm ->
-            ( { model | newApp = Loading }, Cmd.map NewApp (createApp model.appName model.appDescription) )
 
         Tick time ->
             let
