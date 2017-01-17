@@ -9,6 +9,7 @@ import Route exposing (Route)
 
 type Msg
     = AppFormBlur String
+    | AppFormClear
     | AppFormFocus String
     | AppFormSubmit
     | AppFormUpdate String String

@@ -15,6 +15,9 @@ update msg model =
         AppFormBlur field ->
             ( { model | appForm = blurElement model.appForm field }, Cmd.none )
 
+        AppFormClear ->
+            ( { model | appForm = initAppForm }, Cmd.none )
+
         AppFormFocus field ->
             ( { model | appForm = focusElement model.appForm field }, Cmd.none )
 

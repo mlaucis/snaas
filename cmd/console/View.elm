@@ -157,14 +157,19 @@ viewFooter model =
 formApp : WebData App -> Form -> Time -> Time -> Html Msg
 formApp new appForm startTime time =
     let
-        textElement =
+        elementText =
             formElementText AppFormBlur AppFormFocus AppFormUpdate
 
         createForm =
             form [ onSubmit AppFormSubmit ]
-                [ textElement appForm "name"
-                , textElement appForm "description"
-                , button [ type_ "submit" ] [ text "Create" ]
+                [ formGroup
+                    [ elementText appForm "name"
+                    , elementText appForm "description"
+                    ]
+                , div [ class "action-group" ]
+                    [ formButtonReset AppFormClear "Clear"
+                    , formButtonSubmit AppFormSubmit "Create"
+                    ]
                 ]
     in
         case new of
@@ -179,6 +184,14 @@ formApp new appForm startTime time =
 
             Success _ ->
                 createForm
+
+formButtonReset : Msg -> String -> Html Msg
+formButtonReset msg name =
+    button [ onClick msg, type_ "reset" ] [ text name ]
+
+formButtonSubmit : Msg -> String -> Html Msg
+formButtonSubmit msg name =
+    button [ onClick msg, type_ "submit" ] [ text name ]
 
 formElementContext : Form -> String -> Html Msg
 formElementContext form field =
@@ -216,7 +229,7 @@ formElementText blurMsg focusMsg inputMsg form field =
                             "valid"
 
     in
-        div [ class "form-group" ]
+        div [ class ("element " ++ field) ]
             [ input
                 [ class (field ++ " " ++ validationClass)
                 , onBlur (blurMsg field)
@@ -229,6 +242,10 @@ formElementText blurMsg focusMsg inputMsg form field =
                 []
             , formElementContext form field
             ]
+
+formGroup : List (Html Msg) -> Html Msg
+formGroup elements =
+    div [ class "form-group" ] elements
 
 
 -- HELPER
