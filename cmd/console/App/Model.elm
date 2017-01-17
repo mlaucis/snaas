@@ -4,7 +4,7 @@ import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 
-import Formo exposing (Form, initForm)
+import Formo exposing (Form, initForm, validatorExist, validatorMaxLength, validatorMinLength)
 
 -- MODEL
 
@@ -52,6 +52,14 @@ encode name description =
 initAppForm : Form
 initAppForm =
     initForm
-        [ ( "description", [] )
-        , ( "name", [] )
+        [ ( "description",
+            [ validatorExist
+            , validatorMaxLength 42
+            , validatorMinLength 12
+            ] )
+        , ( "name",
+            [ validatorExist
+            , validatorMaxLength 16
+            , validatorMinLength 3
+            ] )
         ]

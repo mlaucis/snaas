@@ -4,7 +4,7 @@ import Char
 import Color exposing (rgb)
 import Html exposing (..)
 import Html.Attributes exposing (class, href, id, placeholder, title, type_, value)
-import Html.Events exposing (onClick, onFocus, onInput, onSubmit)
+import Html.Events exposing (onBlur, onClick, onFocus, onInput, onSubmit)
 import RemoteData exposing (RemoteData(Failure, Loading, NotAsked, Success), WebData)
 import Time exposing (Time)
 
@@ -12,7 +12,7 @@ import Action exposing (..)
 import App.Model exposing (App)
 import App.View exposing (viewAppItem, viewAppsContext, viewAppsTable)
 import Container
-import Formo exposing (Form, elementError, elementValue)
+import Formo exposing (Form, elementErrors, elementIsFocused, elementIsValid, elementValue)
 import Loader
 import Model exposing (Model)
 import Route
@@ -157,10 +157,13 @@ viewFooter model =
 formApp : WebData App -> Form -> Time -> Time -> Html Msg
 formApp new appForm startTime time =
     let
+        textElement =
+            formElementText AppFormBlur AppFormFocus AppFormUpdate
+
         createForm =
             form [ onSubmit AppFormSubmit ]
-                [ formElementText (AppFormFocus "name") (AppFormUpdate "name") appForm "name"
-                , formElementText (AppFormFocus "description") (AppFormUpdate "description") appForm "description"
+                [ textElement appForm "name"
+                , textElement appForm "description"
                 , button [ type_ "submit" ] [ text "Create" ]
                 ]
     in
@@ -177,21 +180,55 @@ formApp new appForm startTime time =
             Success _ ->
                 createForm
 
-formElementText : Msg -> (String -> Msg) -> Form -> String -> Html Msg
-formElementText focusMsg inputMsg form field =
-    div [ class "form-group" ]
-        [ input
-            [ class field
-            , onFocus focusMsg
-            , onInput inputMsg
-            , placeholder (capitalise field)
-            , type_ "text"
-            , value (elementValue form field)
+formElementContext : Form -> String -> Html Msg
+formElementContext form field =
+    let
+        error =
+            case elementIsFocused form field of
+                False ->
+                    ""
+
+                True ->
+                    case List.head (elementErrors form field) of
+                        Nothing ->
+                            ""
+
+                        Just err ->
+                            err
+
+    in
+        div [ class "error" ] [ text error ]
+
+formElementText : (String -> Msg) -> (String -> Msg) -> (String -> String -> Msg) -> Form -> String -> Html Msg
+formElementText blurMsg focusMsg inputMsg form field =
+    let
+        validationClass =
+            case elementIsFocused form field of
+                False ->
+                    ""
+
+                True ->
+                    case elementIsValid form field of
+                        False ->
+                            "invalid"
+
+                        True ->
+                            "valid"
+
+    in
+        div [ class "form-group" ]
+            [ input
+                [ class (field ++ " " ++ validationClass)
+                , onBlur (blurMsg field)
+                , onFocus (focusMsg field)
+                , onInput (inputMsg field)
+                , placeholder (capitalise field)
+                , type_ "text"
+                , value (elementValue form field)
+                ]
+                []
+            , formElementContext form field
             ]
-            []
-        , span []
-            [ text (elementError form field) ]
-        ]
 
 
 -- HELPER

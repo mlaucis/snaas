@@ -19,7 +19,7 @@ type alias Elements =
 
 
 type alias ElementValidator =
-    String -> ValidationError
+    String -> String -> ValidationError
 
 
 type alias Form =
@@ -49,8 +49,8 @@ initElement ( _, validators ) =
 
 
 blurElement : Form -> String -> Form
-blurElement form name =
-    case Dict.get name form.elements of
+blurElement form field =
+    case Dict.get field form.elements of
         Nothing ->
             form
 
@@ -58,19 +58,49 @@ blurElement form name =
             let
                 elements =
                     Dict.insert
-                        name
+                        field
                         { element | focused = False }
                         form.elements
             in
                 { form | elements = elements }
 
-elementError : Form -> String -> String
-elementError form name =
-    ""
+elementErrors : Form -> String -> List String
+elementErrors form field =
+    let
+        validate validator value =
+            case (validator value) of
+                Nothing ->
+                    ""
+
+                Just s ->
+                    s
+
+    in
+        case Dict.get field form.elements of
+            Nothing ->
+                []
+
+            Just element ->
+                List.map (\v -> validate (v field) element.value) element.validators
+                |> List.filter (\e -> e /= "")
+
+elementIsFocused : Form -> String -> Bool
+elementIsFocused form field =
+    case Dict.get field form.elements of
+        Nothing ->
+            False
+
+        Just element ->
+            element.focused
+
+elementIsValid : Form -> String -> Bool
+elementIsValid form field =
+    elementErrors form field
+    |> List.isEmpty
 
 elementValue : Form -> String -> String
-elementValue form name =
-    case Dict.get name form.elements of
+elementValue form field =
+    case Dict.get field form.elements of
         Nothing ->
             ""
 
@@ -78,8 +108,8 @@ elementValue form name =
             element.value
 
 focusElement : Form -> String -> Form
-focusElement form name =
-    case Dict.get name form.elements of
+focusElement form field =
+    case Dict.get field form.elements of
         Nothing ->
             form
 
@@ -87,15 +117,15 @@ focusElement form name =
             let
                 elements =
                     Dict.insert
-                        name
+                        field
                         { element | focused = True }
                         form.elements
             in
                 { form | elements = elements }
 
 updateElementValue : Form -> String -> String -> Form
-updateElementValue form name value =
-    case Dict.get name form.elements of
+updateElementValue form field value =
+    case Dict.get field form.elements of
         Nothing ->
             form
 
@@ -103,8 +133,29 @@ updateElementValue form name value =
             let
                 elements =
                     Dict.insert
-                        name
+                        field
                         { element | value = value }
                         form.elements
             in
                 { form | elements = elements }
+
+validatorExist : String -> String -> Maybe String
+validatorExist _ value =
+    if String.isEmpty value then
+        Just "can't be empty"
+    else
+        Nothing
+
+validatorMinLength : Int -> String -> String -> Maybe String
+validatorMinLength minLength _ value =
+    if String.length value >= minLength then
+        Nothing
+    else
+        Just ("must have at least " ++ toString minLength ++ " characters")
+
+validatorMaxLength : Int -> String -> String -> Maybe String
+validatorMaxLength maxLength _ value =
+    if String.length value > maxLength then
+        Just ("can't have more than " ++ toString maxLength ++ " characters")
+    else
+        Nothing

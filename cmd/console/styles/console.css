@@ -65,7 +65,9 @@ footer {
 }
 
 form {
+	align-items: flex-start;
 	display: flex;
+	min-height: 10rem;
 }
 
 form div.form-group {
@@ -73,6 +75,34 @@ form div.form-group {
 	flex-direction: column;
 	margin-right: 2rem;
 	width: 45rem;
+}
+
+form div.form-group div.error {
+	font-size: 1.4rem;
+	font-style: italic;
+	font-weight: 300;
+	padding: 1rem 0;
+}
+
+form div.form-group input:focus {
+	outline: 0;
+}
+
+form div.form-group input[type="text"], input[type="password"] {
+	border: 2px solid rgb(234, 234, 234);
+	box-sizing: border-box;
+	font-size: 1.8rem;
+	margin-right: 1rem;
+	padding: 0.8rem;
+	width: 10em;
+}
+
+form div.form-group input.description {
+	width: 40rem;
+}
+
+form div.form-group input.invalid {
+	border: 2px solid rgb(192, 57, 43);
 }
 
 h1 {
@@ -128,18 +158,6 @@ header div.container {
 
 header nav {
 	font-size: 2.4rem;
-}
-
-input[type="text"], input[type="password"] {
-	box-sizing: border-box;
-	font-size: 1.8rem;
-	margin-right: 1rem;
-	padding: 0.8rem;
-	width: 10em;
-}
-
-input.description {
-	width: 40rem;
 }
 
 section#context * {
