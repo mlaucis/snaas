@@ -128,6 +128,7 @@ formIsValid : Form -> Bool
 formIsValid form =
     Dict.toList form.elements
     |> List.map (\( k, _ ) -> elementIsValid form k)
+    |> List.filter (\f -> f /= True )
     |> List.isEmpty
 
 formIsValidated : Form -> Bool
@@ -150,7 +151,7 @@ updateElementValue form field value =
             in
                 { form | elements = elements }
 
-validateForm : Form -> ( Form, Bool)
+validateForm : Form -> ( Form, Bool )
 validateForm form =
     ( { form | validated = True }, formIsValid form )
 

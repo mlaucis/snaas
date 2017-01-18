@@ -191,7 +191,7 @@ formButtonReset msg name =
 
 formButtonSubmit : Msg -> String -> Html Msg
 formButtonSubmit msg name =
-    button [ onClick msg, type_ "submit" ] [ text name ]
+    button [] [ text name ]
 
 formElementContext : Form -> String -> Html Msg
 formElementContext form field =
