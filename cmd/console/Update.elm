@@ -3,7 +3,7 @@ module Update exposing (update)
 import RemoteData exposing (RemoteData(Loading, NotAsked), WebData)
 
 import Action exposing (Msg(..))
-import Formo exposing (blurElement, elementValue, focusElement, updateElementValue)
+import Formo exposing (blurElement, elementValue, focusElement, updateElementValue, validateForm)
 import Model exposing (Flags, Model, init)
 import App.Api exposing (createApp)
 import App.Model exposing (initAppForm)
@@ -22,7 +22,15 @@ update msg model =
             ( { model | appForm = focusElement model.appForm field }, Cmd.none )
 
         AppFormSubmit ->
-            ( { model | newApp = Loading }, Cmd.map NewApp (createApp (elementValue model.appForm "name") (elementValue model.appForm "description") ) )
+            let
+                ( form, isValid ) = validateForm model.appForm
+            in
+                case isValid of
+                    True ->
+                        ( { model | newApp = Loading }, Cmd.map NewApp (createApp (elementValue model.appForm "name") (elementValue model.appForm "description") ) )
+
+                    False ->
+                        ( { model | appForm = form }, Cmd.none )
 
         AppFormUpdate field value ->
             ( { model | appForm = updateElementValue model.appForm field value }, Cmd.none )

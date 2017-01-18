@@ -10,7 +10,7 @@ a {
 }
 
 body, html {
-	background: #f5f5f5;
+	background: rgb(245, 245, 245);
 	font-size: 62.5%;
 }
 
@@ -40,11 +40,14 @@ button:hover {
 }
 
 button[type="reset"] {
-	background: rgb(221, 221, 221);
+	background: rgb(245, 245, 245);
+	color: rgb(36, 56, 60);
+	/*background: rgb(221, 221, 221);*/
 }
 
 button[type="reset"]:hover {
-	background: rgb(187, 187, 187);
+	background: rgb(221, 221, 221);
+	/*background: rgb(187, 187, 187);*/
 }
 
 div.container {

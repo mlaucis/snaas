@@ -12,7 +12,7 @@ import Action exposing (..)
 import App.Model exposing (App)
 import App.View exposing (viewAppItem, viewAppsContext, viewAppsTable)
 import Container
-import Formo exposing (Form, elementErrors, elementIsFocused, elementIsValid, elementValue)
+import Formo exposing (Form, elementErrors, elementIsFocused, elementIsValid, elementValue, formIsValidated)
 import Loader
 import Model exposing (Model)
 import Route
@@ -196,18 +196,20 @@ formButtonSubmit msg name =
 formElementContext : Form -> String -> Html Msg
 formElementContext form field =
     let
+        isFocused = elementIsFocused form field
+
+        isValidated = formIsValidated form
+
         error =
-            case elementIsFocused form field of
-                False ->
-                    ""
+            if isFocused || isValidated then
+                case List.head (elementErrors form field) of
+                    Nothing ->
+                        ""
 
-                True ->
-                    case List.head (elementErrors form field) of
-                        Nothing ->
-                            ""
-
-                        Just err ->
-                            err
+                    Just err ->
+                        err
+            else
+                ""
 
     in
         div [ class "error" ] [ text error ]
@@ -215,18 +217,20 @@ formElementContext form field =
 formElementText : (String -> Msg) -> (String -> Msg) -> (String -> String -> Msg) -> Form -> String -> Html Msg
 formElementText blurMsg focusMsg inputMsg form field =
     let
+        isFocused = elementIsFocused form field
+
+        isValidated = formIsValidated form
+
         validationClass =
-            case elementIsFocused form field of
-                False ->
-                    ""
+            if isFocused || isValidated then
+                case elementIsValid form field of
+                    False ->
+                        "invalid"
 
-                True ->
-                    case elementIsValid form field of
-                        False ->
-                            "invalid"
-
-                        True ->
-                            "valid"
+                    True ->
+                        "valid"
+            else
+                ""
 
     in
         div [ class ("element " ++ field) ]

@@ -24,6 +24,7 @@ type alias ElementValidator =
 
 type alias Form =
     { elements : Elements
+    , validated : Bool
     }
 
 
@@ -40,7 +41,7 @@ initForm fields =
                 Dict.empty
                 fields
     in
-        Form elements
+        Form elements False
 
 
 initElement : ( String, List ElementValidator ) -> Element
@@ -123,6 +124,16 @@ focusElement form field =
             in
                 { form | elements = elements }
 
+formIsValid : Form -> Bool
+formIsValid form =
+    Dict.toList form.elements
+    |> List.map (\( k, _ ) -> elementIsValid form k)
+    |> List.isEmpty
+
+formIsValidated : Form -> Bool
+formIsValidated form =
+    form.validated
+
 updateElementValue : Form -> String -> String -> Form
 updateElementValue form field value =
     case Dict.get field form.elements of
@@ -138,6 +149,10 @@ updateElementValue form field value =
                         form.elements
             in
                 { form | elements = elements }
+
+validateForm : Form -> ( Form, Bool)
+validateForm form =
+    ( { form | validated = True }, formIsValid form )
 
 validatorExist : String -> String -> Maybe String
 validatorExist _ value =
